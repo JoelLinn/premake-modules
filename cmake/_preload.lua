@@ -5,12 +5,12 @@ newaction {
 	shortname       = "CMake",
 	description     = "Generate classical CMakeLists.txt",
 
-	valid_kinds     = { "ConsoleApp", "WindowedApp", "StaticLib", "SharedLib" },
+	valid_kinds     = { "ConsoleApp", "WindowedApp", "StaticLib", "SharedLib", "Utility" },
 
 	valid_languages = { "C", "C++" },
 
 	valid_tools     = {
-		cc = { "clang", "gcc" },
+		cc = { "clang", "gcc", "msc" },
 	},
 	onWorkspace = function(wks)
 		p.modules.cmake.generateWorkspace(wks)

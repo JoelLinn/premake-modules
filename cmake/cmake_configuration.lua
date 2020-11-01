@@ -18,17 +18,22 @@ function m.flags(cfg)
   end
   if cfg.flags and #cfg.flags > 0 then
     for _, flag in ipairs(cfg.flags) do
-      if flag == 'C++11' then
-        _p(1, 'set(CMAKE_CXX_STANDARD 11)')
-      elseif flag == 'C++14' then
-        _p(1, 'set(CMAKE_CXX_STANDARD 14)')
-      elseif flag == 'Symbols' then
+      if flag == 'Symbols' then
         buildType = 'DebugFull'
       elseif flag == 'FatalWarnings' or flag == 'FatalCompileWarnings' then
         cmakeflags = cmakeflags..' -Werror'
       elseif flag == 'Unicode' then
         _p(1,'add_definitions(-DUNICODE -D_UNICODE)')
       end
+    end    
+    if (cfg.cppdialect == "C++14") then
+      _p(1, 'set(CMAKE_CXX_STANDARD 14)')
+    elseif (cfg.cppdialect == "C++17") then
+      _p(1, 'set(CMAKE_CXX_STANDARD 17)')
+    elseif (cfg.cppdialect == "C++20") then
+      _p(1, 'set(CMAKE_CXX_STANDARD 20)')
+    elseif (cfg.cppdialect == "C++latest") then
+      _p(1, 'set(CMAKE_CXX_STANDARD 20)')
     end
   end
   if cfg.vectorextensions == 'AVX' then
@@ -54,18 +59,6 @@ function m.files(cfg)
       _p(2, project.getrelative(cfg.project, v))
     end
     _p(1, ")")
-  end
-end
-
--- Generate Defines
-function m.defines(cfg)
-  if cfg.defines and #cfg.defines then
-    _p('')
-    _p(1,'add_definitions(')
-    for _, define in ipairs(cfg.defines) do
-      _p(2, '-D%s', define)
-    end
-    _p(1,')')
   end
 end
 
@@ -96,6 +89,19 @@ function m.targetprops(cfg)
     _p(2,'LIBRARY_OUTPUT_DIRECTORY "%s"', cfg.targetdir)
     _p(2,'RUNTIME_OUTPUT_DIRECTORY "%s"', cfg.targetdir)
     _p(2,'OUTPUT_NAME  "%s"', filename)
+    _p(1,')')
+  end
+end
+
+-- Generate Defines
+function m.defines(cfg)
+  if cfg.defines and #cfg.defines then
+    local targetname = cmake.targetname(cfg)
+    _p('')
+    _p(1, 'target_compile_definitions( %s PUBLIC', targetname)    
+    for _, define in ipairs(cfg.defines) do
+      _p(2, '-D%s', define)
+    end
     _p(1,')')
   end
 end
@@ -151,7 +157,8 @@ function m.sibling_links(cfg)
     _p('')
     _p(1, 'set(SIBLING_LIBS ')
     for _, libname in ipairs(links) do
-      _p(2, libname:sub(4)..'_'..cmake.cfgname(cfg))
+      -- TODO FIXME sub(4) on Linux ????
+      _p(2, libname:sub(0)..'_'..cmake.cfgname(cfg))
     end
     _p(1, ')')
     local targetname = cmake.targetname(cfg)
@@ -163,11 +170,11 @@ end
 function m.elements.generate(cfg)
   return {
     m.flags,
-    m.defines,
     m.libdirs,
     m.files,
     m.target,
     m.targetprops,
+    m.defines,
     m.includedirs,
     m.system_links,
     m.sibling_links,
@@ -175,5 +182,7 @@ function m.elements.generate(cfg)
 end
 
 function m.generate(prj, cfg)
-	p.callArray(m.elements.generate, cfg)
+  if prj.kind ~= 'Utility' then
+	  p.callArray(m.elements.generate, cfg)
+  end
 end
